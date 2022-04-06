@@ -1,0 +1,29 @@
+This folder contains scripts and files to control ssh-service
+
+1) ssh_disable.py - python script, disables ssh on this unit and
+disconnects all users connected via ssh 
+
+usage: ./ssh_disable.py
+
+2) ssh_disable_remote_hostname.sh - bash script, disables ssh on remote unit
+with given hostname or IP-address and disconnects all users connected via ssh.
+
+usage: ./ssh_disable_remote_hostname.sh [hostnames/ip-addresses]
+
+3) ssh_disable_remote.sh - bash script, disables ssh on hosts from "host_list" file.
+
+usage: ./ssh_disable_remote.sh
+
+4) ssh_enable_hostname.sh - bash script, enables ssh on given host.
+
+usage: ./ssh_enable_hostname.sh [hostnames/ip-addresses]
+
+5) ssh_enable.sh - bash script, enables ssh on hosts from "host_list" file.
+
+usage: ./ssh_enable.sh
+
+6) snmp_configure.py - python script, configures snmpd.service on new unit.
+
+usage: run ./snmp_configure.py once to configure snmp
+
+7) host_list - file with hostnames and ip-addresses.
