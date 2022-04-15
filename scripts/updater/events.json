@@ -1,0 +1,14 @@
+{
+    "Events": [
+        {
+            "EventType": "FilCopy",
+            "md5": "asdasdasd",
+            "TargetPath": "targetPath",
+            "FileName":"file"
+        },
+        {
+            "EventType": "ExecCommand",  
+            "CommandText": "q"
+        }
+    ]
+}
