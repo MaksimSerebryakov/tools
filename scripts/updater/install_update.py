@@ -13,6 +13,7 @@ EVENTS_DICT = {
 } 
 FOLDER_NAME = '_'.join(str(datetime.now()).split('.')[0].split())
 
+
 class UnknownEvent(Exception):
     def __init__(self, event):
         self.event = event
@@ -21,12 +22,9 @@ class EventError(Exception):
     def __init__(self, text):
         self.txt = text
 
-"""with open('test.txt', 'r') as f:
-    data = f.read()
-    md5 = hashlib.md5(data.encode()).hexdigest()
-    
-    print(md5)    
-"""
+class MD5Error(Exception):
+    def __init__(self, file_name):
+        self.file = file_name
 
 def delete_update_package():
     print('Deleting update package...')
@@ -71,7 +69,7 @@ def back_up(backup_path, md5, file_name, target_path, fl):
             )
         )
     
-    if not(fl):                                              # update dir name = 
+    if not(fl):                                              # backup dir name = 
         os.system(                                           # current date and time
             'mkdir {0}/backup/{1}'.format(
                 backup_path,
@@ -92,7 +90,19 @@ def back_up(backup_path, md5, file_name, target_path, fl):
         f.write('{0} {1}\n'.format(md5, target_path + '/' + file_name))
 
 def check_md5(file_name, target_path, md5):
-    pass
+    with open('{0}/{1}'.format(
+        target_path,
+        file_name
+    ), 'r') as f:
+        data = f.read()
+        md5_new = hashlib.md5(data.encode()).hexdigest()
+    
+        if md5 != md5_new:
+            raise MD5Error('{}/{}'.format(
+                target_path, 
+                file_name
+            ))
+
 
 def exec_events(events):
     fl_backup = False
@@ -128,8 +138,13 @@ def exec_events(events):
                 )
             )
 
-            check_md5()
-
+            check_md5(
+                event["FileName"],
+                event["TargetPath"],
+                event["md5"]
+            )
+        if event["EventType"] == list(EVENTS_DICT.keys())[1]:
+            os.system(event["CommandText"])
 
 def main():  
     events = {}
@@ -150,5 +165,7 @@ if __name__ == "__main__":
         delete_update_package()
     except EventError as ee:
         print(ee)
+    except MD5Error as md5er:
+        print(md5er.file)
     else:
         print("update successful")
