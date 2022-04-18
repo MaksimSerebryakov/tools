@@ -92,7 +92,7 @@ def back_up(backup_path, md5, file_name, target_path, fl):
         f.write('{0} {1}\n'.format(md5, target_path + '/' + file_name))
 
 def check_md5(file_name, target_path, md5):
-
+    pass
 
 def exec_events(events):
     fl_backup = False
