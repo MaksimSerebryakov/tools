@@ -4,29 +4,77 @@ import json
 import hashlib 
 import os.path
 import os
+import logging
 
 from datetime import datetime
+
+from matplotlib.font_manager import json_load
 
 EVENTS_DICT = {
     "FileCopy": ("EventType", "md5", "TargetPath", "FileName"),
     "ExecCommand" : ("EventType", "CommandText")
 } 
-FOLDER_NAME = '_'.join(str(datetime.now()).split('.')[0].split())
+BACKUP_FOLDER_NAME = '_'.join(str(datetime.now()).split('.')[0].split())
 
 
 class UnknownEvent(Exception):
     def __init__(self, event):
+        self.type = "UnknownEvent"
         self.event = event
         
 class EventError(Exception):
     def __init__(self, text):
+        self.type = "EventError"
         self.txt = text
 
 class MD5Error(Exception):
     def __init__(self, file_name):
+        self.type = "MD5Error"
         self.file = file_name
 
-def delete_update_package():
+def make_logger():
+    logger = logging.getLogger('update_logger')
+    logger.setLevel(logging.INFO)
+
+    fh = logging.FileHandler('/var/log/update.log')
+    formatter = logging.Formatter(
+        '%(asctime)s - %(levelname)s - %(message)s'
+    )
+    fh.setFormatter(formatter)
+
+    logger.addHandler(fh)
+
+    return logger
+
+def move_files_back():
+    events = {}
+    
+    with open('events.json', 'r') as events_file:
+        events = json.load(events_file)
+
+    files = os.listdir(events["Backup"] + '/backup/' + BACKUP_FOLDER_NAME)
+    
+    for event in events["Events"]:
+        if event["EventType"] == "FileCopy":
+            if event["md5"] in files:
+                os.system(
+                    'cp {0}/backup/{1}/{2} {3}/{4}'.format(
+                        events["Backup"],
+                        BACKUP_FOLDER_NAME,
+                        event["md5"],
+                        event["TargetPath"],
+                        event["FileName"]
+                    )
+                )
+            
+
+def delete_update_package(files_moved=False):
+    if files_moved:
+        move_files_back()
+
+    os.system("sudo rm -rf update_package/")
+    os.system("sudo rm events.json")
+
     print('Deleting update package...')
     
 def check_syntax(events):
@@ -37,7 +85,8 @@ def check_syntax(events):
         if event["EventType"] == list(EVENTS_DICT.keys())[0]:
             if len(event.keys()) != 4:
                 raise EventError(
-                    'Wrong keys number in events.json: expected 4, got {}'.format(
+                    'Wrong "Events" keys number in events.json for "FileCopy"\
+: expected 4, got {}'.format(
                         len(event.keys())
                     )
                 )
@@ -45,12 +94,14 @@ def check_syntax(events):
                 for arg in event.keys():
                     if not(arg in EVENTS_DICT[list(EVENTS_DICT.keys())[0]]):
                         raise EventError(
-                            'Wrong list of keys in events.json'
+                            'Wrong list of "Events" keys in events.json for\
+FileCopy'
                         )
         if event["EventType"] == list(EVENTS_DICT.keys())[1]:
             if len(event.keys()) != 2:
                 raise EventError(
-                    'Wrong keys number in events.json: expected 2, got {}'.format(
+                    'Wrong "Events" keys number in events.json: for ExecCommand\
+expected 2, got {}'.format(
                         len(event.keys())
                     )
                 )
@@ -58,7 +109,7 @@ def check_syntax(events):
                 for arg in event.keys():
                     if not(arg in EVENTS_DICT[list(EVENTS_DICT.keys())[1]]):
                         raise EventError(
-                            'Wrong list of keys in events.json'
+                            'Wrong list of keys in events.json for ExecCommand'
                         )
 
 def back_up(backup_path, md5, file_name, target_path, fl):
@@ -73,21 +124,40 @@ def back_up(backup_path, md5, file_name, target_path, fl):
         os.system(                                           # current date and time
             'mkdir {0}/backup/{1}'.format(
                 backup_path,
-                FOLDER_NAME
+                BACKUP_FOLDER_NAME
             )
         )
     
     os.system(
         'sudo cp {0} {1}'.format(                            # "backing up" file
             target_path + '/' + file_name,
-            backup_path + '/backup/' + FOLDER_NAME + '/' + md5
+            backup_path + '/backup/' + BACKUP_FOLDER_NAME + '/' + md5
         )
     )
 
+    if not(os.path.exists('{0}/backup/{1}/pair_table.json'.format(
+        backup_path, 
+        BACKUP_FOLDER_NAME))
+    ):  
+        os.system('echo {0}{1} > {2}/backup/{3}/pair_table.json'.format(
+            '{',
+            '}',
+            backup_path, 
+            BACKUP_FOLDER_NAME
+        ))
+
+    pairs = {}
     with open(                                               # make file with md5:filename
-        '{0}/backup/{1}/pair_table'.format(backup_path, FOLDER_NAME), 'a'
+        '{0}/backup/{1}/pair_table.json'.format(backup_path, BACKUP_FOLDER_NAME), 'r'
     ) as f:
-        f.write('{0} {1}\n'.format(md5, target_path + '/' + file_name))
+        pairs = json.load(f)
+
+    pairs[md5] = file_name
+
+    with open(                                               # make file with md5:filename
+        '{0}/backup/{1}/pair_table.json'.format(backup_path, BACKUP_FOLDER_NAME), 'w'
+    ) as f:
+        json.dump(pairs, f)
 
 def check_md5(file_name, target_path, md5):
     with open('{0}/{1}'.format(
@@ -146,6 +216,44 @@ def exec_events(events):
         if event["EventType"] == list(EVENTS_DICT.keys())[1]:
             os.system(event["CommandText"])
 
+def add_err_to_config(error_type):
+    config = {}
+    with open('config.json', 'r') as config_file:
+        config = json.load(config_file)
+
+    if not("Errors" in config.keys()):
+        config["Errors"] = {}
+
+    config["Errors"][error_type.type] = {
+        "Date": ' '.join(BACKUP_FOLDER_NAME.split('_')), 
+        "read" : False
+    }
+
+    with open('config.json', 'w') as config_file:
+        json.dump(config, config_file, indent=4)
+
+def add_new_files_to_config():
+    config = {}
+    with open('config.json', 'r') as config_file:
+        config = json.load(config_file)
+    config["New"] = list()
+
+    events = {}
+    with open('events.json', 'r') as events_file:
+        events = json.load(events_file)
+
+    for event in events["Events"]:
+        if event["EventType"] == "FileCopy":
+            config["New"].append(
+                {
+                    "hash" : event["md5"],
+                    "path" : event["TargetPath"] + '/' + event["FileName"]
+                }
+            )
+    
+    with open('config.json', 'w') as config_file:
+        json.dump(config, config_file, indent=4)
+
 def main():  
     events = {}
     
@@ -155,17 +263,47 @@ def main():
     check_syntax(events)
     exec_events(events)
     
-    return
-    
 if __name__ == "__main__":
     try:
         main()
     except UnknownEvent as ue:
+        logger = make_logger()
+        logger.error(
+            'Unknown EventType "{}" in events.json'.format(
+                ue.event
+            )
+        )
+
+        add_err_to_config(ue)
+
         print('Unknown EventType "{}" in events.json'.format(ue.event))
         delete_update_package()
     except EventError as ee:
+        logger = make_logger()
+        logger.error(ee)
+
+        add_err_to_config(ee)
+
         print(ee)
+
+        delete_update_package()
     except MD5Error as md5er:
+        logger = make_logger()
+        logger.error(
+            'File "{}" was coppied incorrectly, md5-s do not match'.format(
+                md5er.file
+            )
+        )
+
+        add_err_to_config(md5er)
+
         print(md5er.file)
+
+        delete_update_package(files_moved=True)
     else:
-        print("update successful")
+        logger = make_logger()
+        logger.info('Updated successfully')
+
+        add_new_files_to_config()
+
+        print("Updated successfully!")

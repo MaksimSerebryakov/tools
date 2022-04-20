@@ -1,0 +1,32 @@
+{
+    "Current": {
+        "0": {
+            "hash": "1566099928664b4a3d2cf62b0b937e76",
+            "path": "/home/aadmin/switchexe/Switch"
+        },
+        "1": {
+            "hash": "71260165ec2b8ee8dd4babdd65b2472a",
+            "path": "/home/aadmin/switchexe/switch_main.cfg"
+        }
+    },
+    "New": [
+        {
+            "hash": "78bdf76375d68042f175a544f02f8053",
+            "path": "/home/maxim/PROGRAMMING/PromEng/tools/scripts/updater/to_update/test.txt"
+        },
+        {
+            "hash": "cd385a33e640b63c6284c494975ceb23",
+            "path": "/home/maxim/PROGRAMMING/PromEng/tools/scripts/updater/to_update/last"
+        },
+        {
+            "hash": "22dee14d50722b6a7f09b27e6d41747b",
+            "path": "/home/maxim/PROGRAMMING/PromEng/tools/scripts/updater/to_update/super.cpp"
+        }
+    ],
+    "Errors": {
+        "UnknownEvent": {
+            "Date": "2022-04-20 12:05:39",
+            "read": false
+        }
+    }
+}
