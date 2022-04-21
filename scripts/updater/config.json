@@ -24,8 +24,8 @@
         }
     ],
     "Errors": {
-        "UnknownEvent": {
-            "Date": "2022-04-20 12:05:39",
+        "PackageError": {
+            "Date": "2022-04-20 13:32:29",
             "read": false
         }
     }

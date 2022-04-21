@@ -8,14 +8,17 @@ import logging
 
 from datetime import datetime
 
-from matplotlib.font_manager import json_load
-
 EVENTS_DICT = {
     "FileCopy": ("EventType", "md5", "TargetPath", "FileName"),
     "ExecCommand" : ("EventType", "CommandText")
 } 
 BACKUP_FOLDER_NAME = '_'.join(str(datetime.now()).split('.')[0].split())
 
+
+class PackageError(Exception):
+    def __init__(self, file_):
+        self.type = "PackageError"
+        self.file_ = file_
 
 class UnknownEvent(Exception):
     def __init__(self, event):
@@ -69,13 +72,12 @@ def move_files_back():
             
 
 def delete_update_package(files_moved=False):
+    print('\nDeleting update package...\n')
     if files_moved:
         move_files_back()
 
     os.system("sudo rm -rf update_package/")
     os.system("sudo rm events.json")
-
-    print('Deleting update package...')
     
 def check_syntax(events):
     for event in events["Events"]:
@@ -224,9 +226,11 @@ def add_err_to_config(error_type):
     if not("Errors" in config.keys()):
         config["Errors"] = {}
 
-    config["Errors"][error_type.type] = {
-        "Date": ' '.join(BACKUP_FOLDER_NAME.split('_')), 
-        "read" : False
+    config["Errors"] = {
+        error_type.type : {
+            "Date": ' '.join(BACKUP_FOLDER_NAME.split('_')), 
+            "read" : False
+        }
     }
 
     with open('config.json', 'w') as config_file:
@@ -254,7 +258,14 @@ def add_new_files_to_config():
     with open('config.json', 'w') as config_file:
         json.dump(config, config_file, indent=4)
 
-def main():  
+def main(): 
+    if not(os.path.exists('update_package')):
+        print("update_package/ is missing...")
+        raise PackageError('update_package/')
+    if not(os.path.exists('events.json')):
+        print("events.json is missing...")
+        raise PackageError('events.json')
+    
     events = {}
     
     with open('events.json', 'r') as events_file:
@@ -300,6 +311,15 @@ if __name__ == "__main__":
         print(md5er.file)
 
         delete_update_package(files_moved=True)
+    except PackageError as pe:
+        logger = make_logger()
+        logger.error(
+            'File {} is missing, unable to start update'.format(
+                pe.file_
+            )
+        )
+
+        add_err_to_config(pe)
     else:
         logger = make_logger()
         logger.info('Updated successfully')
@@ -307,3 +327,4 @@ if __name__ == "__main__":
         add_new_files_to_config()
 
         print("Updated successfully!")
+        delete_update_package()
