@@ -6,15 +6,13 @@ import os
 import os.path
 
 def add_file_to_package(file_path):
-    if not(os.path.exists('update_package')):
-        os.system('mkdir update_package')
-    
     os.system('cp {0} {1}/'.format(
         file_path, 
         'update_package'
     ))
 
-def build_update(events):
+def build_update():
+    events = {}
     print('Choose Backup folder: ', end='')
     backup = input()
     print('\nNow enter the sequence of files and commands\
@@ -64,6 +62,8 @@ def build_update(events):
                 "EventType": "ExecCommand",
                 "CommandText": command
             }
+        elif type != 'exit':
+            print('Unknown command type')
         else:
             break
         
@@ -73,10 +73,10 @@ def build_update(events):
 
 def main():
     events = {}
-
-    events = build_update(events)
-
-    with open('events.json', 'w') as event_file:
+    os.system('mkdir update_package')
+    events = build_update()
+    
+    with open('update_package/events.json', 'w') as event_file:
         json.dump(events, event_file, indent=4)
 
 if __name__ == "__main__":

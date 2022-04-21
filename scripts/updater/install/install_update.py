@@ -52,7 +52,7 @@ def make_logger():
 def move_files_back():
     events = {}
     
-    with open('events.json', 'r') as events_file:
+    with open('update_package/events.json', 'r') as events_file:
         events = json.load(events_file)
 
     files = os.listdir(events["Backup"] + '/backup/' + BACKUP_FOLDER_NAME)
@@ -77,7 +77,7 @@ def delete_update_package(files_moved=False):
         move_files_back()
 
     os.system("sudo rm -rf update_package/")
-    os.system("sudo rm events.json")
+    #os.system("sudo rm events.json")
     
 def check_syntax(events):
     for event in events["Events"]:
@@ -216,12 +216,15 @@ def exec_events(events):
                 event["md5"]
             )
         if event["EventType"] == list(EVENTS_DICT.keys())[1]:
-            os.system(event["CommandText"])
+            if not(os.system(event["CommandText"])):
+                continue
 
 def add_err_to_config(error_type):
     config = {}
-    with open('config.json', 'r') as config_file:
-        config = json.load(config_file)
+    with open('config_path', 'r') as cfg_path:
+        path = cfg_path.read()
+        with open(path, 'r') as config_file:
+            config = json.load(config_file)
 
     if not("Errors" in config.keys()):
         config["Errors"] = {}
@@ -233,17 +236,21 @@ def add_err_to_config(error_type):
         }
     }
 
-    with open('config.json', 'w') as config_file:
-        json.dump(config, config_file, indent=4)
+    with open('config_path', 'r') as cfg_path:
+        path = cfg_path.read()
+        with open(path, 'w') as config_file:
+            json.dump(config, config_file, indent=4)
 
 def add_new_files_to_config():
     config = {}
-    with open('config.json', 'r') as config_file:
-        config = json.load(config_file)
+    with open('config_path', 'r') as cfg_path:
+        path = cfg_path.read()
+        with open(path, 'r') as config_file:
+            config = json.load(config_file)
     config["New"] = list()
 
     events = {}
-    with open('events.json', 'r') as events_file:
+    with open('update_package/events.json', 'r') as events_file:
         events = json.load(events_file)
 
     for event in events["Events"]:
@@ -255,20 +262,22 @@ def add_new_files_to_config():
                 }
             )
     
-    with open('config.json', 'w') as config_file:
-        json.dump(config, config_file, indent=4)
+    with open('config_path', 'r') as cfg_path:
+        path = cfg_path.read()
+        with open(path, 'w') as config_file:
+            json.dump(config, config_file, indent=4)
 
 def main(): 
     if not(os.path.exists('update_package')):
         print("update_package/ is missing...")
         raise PackageError('update_package/')
-    if not(os.path.exists('events.json')):
+    if not(os.path.exists('update_package/events.json')):
         print("events.json is missing...")
         raise PackageError('events.json')
     
     events = {}
     
-    with open('events.json', 'r') as events_file:
+    with open('update_package/events.json', 'r') as events_file:
         events = json.load(events_file)
     
     check_syntax(events)

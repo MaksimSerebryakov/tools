@@ -11,21 +11,13 @@
     },
     "New": [
         {
-            "hash": "78bdf76375d68042f175a544f02f8053",
-            "path": "/home/maxim/PROGRAMMING/PromEng/tools/scripts/updater/to_update/test.txt"
-        },
-        {
-            "hash": "cd385a33e640b63c6284c494975ceb23",
+            "hash": "0586f3ece790b44c4baf54e7b767c6b4",
             "path": "/home/maxim/PROGRAMMING/PromEng/tools/scripts/updater/to_update/last"
-        },
-        {
-            "hash": "22dee14d50722b6a7f09b27e6d41747b",
-            "path": "/home/maxim/PROGRAMMING/PromEng/tools/scripts/updater/to_update/super.cpp"
         }
     ],
     "Errors": {
         "PackageError": {
-            "Date": "2022-04-21 13:48:51",
+            "Date": "2022-04-21 14:29:52",
             "read": false
         }
     }
