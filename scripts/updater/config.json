@@ -1,24 +1,28 @@
 {
-    "Current": {
-        "0": {
-            "hash": "1566099928664b4a3d2cf62b0b937e76",
-            "path": "/home/aadmin/switchexe/Switch"
-        },
-        "1": {
-            "hash": "71260165ec2b8ee8dd4babdd65b2472a",
-            "path": "/home/aadmin/switchexe/switch_main.cfg"
+    "Errors": {
+        "PackageError": {
+            "read": false,
+            "Date": "2022-04-21 14:29:52"
         }
     },
     "New": [
         {
-            "hash": "0586f3ece790b44c4baf54e7b767c6b4",
-            "path": "/home/maxim/PROGRAMMING/PromEng/tools/scripts/updater/to_update/last"
+            "hash": "d41d8cd98f00b204e9800998ecf8427e",
+            "path": "/home/maxim/tools/scripts/updater/to_update/my_file"
+        },
+        {
+            "hash": "046e8deba1e38b28673f24c66b3011f3",
+            "path": "/home/maxim/tools/scripts/updater/to_update/test.txt"
         }
     ],
-    "Errors": {
-        "PackageError": {
-            "Date": "2022-04-21 14:29:52",
-            "read": false
+    "Current": {
+        "1": {
+            "hash": "71260165ec2b8ee8dd4babdd65b2472a",
+            "path": "/home/aadmin/switchexe/switch_main.cfg"
+        },
+        "0": {
+            "hash": "1566099928664b4a3d2cf62b0b937e76",
+            "path": "/home/aadmin/switchexe/Switch"
         }
     }
 }
