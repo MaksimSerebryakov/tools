@@ -4,6 +4,7 @@ import json
 import hashlib
 import os
 import os.path
+import sys
 
 def add_file_to_package(file_path):
     os.system('cp {0} {1}/'.format(
@@ -13,12 +14,9 @@ def add_file_to_package(file_path):
 
 def build_update():
     events = {}
-    print('Choose Backup folder: ', end='')
-    backup = input()
+    
     print('\nNow enter the sequence of files and commands\
 \nwhich should be coppied or executed one by another:\n')
-
-    events["Backup"] = backup 
     events["Events"] = list()
     
     file_ = ''
@@ -74,7 +72,16 @@ def build_update():
 def main():
     events = {}
     os.system('mkdir update_package')
-    events = build_update()
+
+    if len(sys.argv) == 1:
+        events = build_update()
+    else:
+        with open(sys.argv[1], 'r') as event_file:
+            events = json.load(event_file)
+
+    print('Choose Backup folder: ', end='')
+    backup = input()
+    events["Backup"] = backup
     
     with open('update_package/events.json', 'w') as event_file:
         json.dump(events, event_file, indent=4)
