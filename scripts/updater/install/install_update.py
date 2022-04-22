@@ -35,6 +35,7 @@ class MD5Error(Exception):
         self.type = "MD5Error"
         self.file = file_name
 
+
 def make_logger():
     logger = logging.getLogger('update_logger')
     logger.setLevel(logging.INFO)
@@ -69,7 +70,6 @@ def move_files_back():
                         event["FileName"]
                     )
                 )
-            
 
 def delete_update_package(files_moved=False):
     print('\nDeleting update package...\n')
@@ -174,7 +174,6 @@ def check_md5(file_name, target_path, md5):
                 target_path, 
                 file_name
             ))
-
 
 def exec_events(events):
     fl_backup = False
@@ -282,7 +281,7 @@ def main():
     
     check_syntax(events)
     exec_events(events)
-    
+
 if __name__ == "__main__":
     try:
         main()
