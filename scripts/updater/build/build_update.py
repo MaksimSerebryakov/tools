@@ -9,6 +9,19 @@ import sys
 from datetime import datetime
 
 UPDATE_FOLDER_NAME = str(datetime.now()).split('.')[0].split()[0]
+EVENT_TYPE = 'EventType'
+FILE_COPY = 'FileCopy'
+MD5 = 'md5'
+EXEC_COMMAND = 'ExecCommand'
+COMMAND_TEXT = 'CommandText'
+TARGET_PATH = 'TargetPath'
+FILE_NAME = 'FileName'
+FILE_REMOVE = 'FileRemove'
+EVENTS = 'Events'
+LOCAL_PATH = 'LocalPath'
+UPDATES = 'updates'
+UPDATE = 'update'
+HOSTS = 'hosts'
 
 def add_file_to_package(file_path, md5):
     os.system('cp {0} {1}/{2}'.format(
@@ -22,7 +35,7 @@ def build_update():
     
     print('\nNow enter the sequence of files and commands\
 \nwhich should be coppied or executed one by another:\n')
-    events["Events"] = list()
+    events[EVENTS] = list()
     
     file_ = ''
     command = ''
@@ -52,26 +65,26 @@ def build_update():
             add_file_to_package(file_, md5)
             
             event = {
-                "EventType": "FileCopy",
-                "md5": md5,
-                "TargetPath": target_path,
-                "FileName": file_.split('/')[-1]
+                EVENT_TYPE: FILE_COPY,
+                MD5: md5,
+                TARGET_PATH: target_path,
+                FILE_NAME: file_.split('/')[-1]
             }
         elif type == 'command':
             print('Enter command: ', end='')
             command = input()
 
             event = {
-                "EventType": "ExecCommand",
-                "CommandText": command
+                EVENT_TYPE: EXEC_COMMAND,
+                COMMAND_TEXT: command
             }
         elif type == 'remove':
             print('Enter remote path of file you want to remove: ', end='')
             remove_path = input()
             
             event = {
-                "EventType": "FileRemove",
-                "TargetPath": remove_path
+                EVENT_TYPE: FILE_REMOVE,
+                TARGET_PATH: remove_path
             }
         elif type != 'exit':
             print('Unknown command type')
@@ -79,32 +92,32 @@ def build_update():
         else:
             break
         
-        events["Events"].append(event)
+        events[EVENTS].append(event)
     
     return events
 
 def handle_update(info_file):
     info = {}
     events = {}
-    events["Events"] = list()
+    events[EVENTS] = list()
     
     with open(info_file, 'r') as f:
         info = json.load(f)
         
-    for event in info["Events"]:
-        if event["EventType"] == 'FileCopy':
+    for event in info[EVENTS]:
+        if event[EVENT_TYPE] == FILE_COPY:
             add_file_to_package(
-                event["LocalPath"],
-                event["md5"]
+                event[LOCAL_PATH],
+                event[MD5]
             )
-            events["Events"].append({
-                    "md5": event["md5"],
-                    "FileName": event["FileName"],
-                    "EventType": event["EventType"],
-                    "TargetPath": event["TargetPath"]
+            events[EVENTS].append({
+                    MD5: event[MD5],
+                    FILE_NAME: event[FILE_NAME],
+                    EVENT_TYPE: event[EVENT_TYPE],
+                    TARGET_PATH: event[TARGET_PATH]
             })
         else:
-            events["Events"].append(event)
+            events[EVENTS].append(event)
         
         
     return events
@@ -112,7 +125,7 @@ def handle_update(info_file):
 def rewrite_updates(info_file):
     info = {}
     updates = {}
-    updates['updates'] = {}
+    updates[UPDATES] = {}
     
     with open(info_file, 'r') as f:
         info = json.load(f)
@@ -127,10 +140,10 @@ def rewrite_updates(info_file):
         with open('updates.json', 'r') as f: 
             updates = json.load(f)
     
-    for host in info["hosts"]:
-        updates['updates'][host] = {
-            "update": UPDATE_FOLDER_NAME,
-            "md5": ''
+    for host in info[HOSTS]:
+        updates[UPDATES][host] = {
+            UPDATE: UPDATE_FOLDER_NAME,
+            MD5: ''
         }
     
     with open('updates.json', 'w') as f: 
@@ -152,8 +165,8 @@ def main():
             data = f.read()
             md5 = hashlib.md5(data).hexdigest()
         
-        for update in updates['updates']: 
-            updates['updates'][update]['md5'] = md5
+        for update in updates[UPDATES]: 
+            updates[UPDATES][update][MD5] = md5
         
         with open('updates.json', 'w') as f: 
             json.dump(updates, f, indent=4)
@@ -165,4 +178,9 @@ def main():
         json.dump(events, event_file, indent=4)
 
 if __name__ == "__main__":  
-    main()
+    try:
+        main()
+    except Exception as exc:
+        print('Error occured:', exc)
+    else:
+        print('Built successfully!')
