@@ -10,7 +10,7 @@ with given hostname or IP-address and disconnects all users connected via ssh.
 
 usage: ./ssh_disable_remote_hostname.sh [hostnames/ip-addresses]
 
-3) ssh_disable_remote.sh - bash script, disables ssh on hosts from "host_list" file.
+3) ssh_disable_remote.sh - bash script, disables ssh on hosts from "hosts" file.
 
 usage: ./ssh_disable_remote.sh
 
@@ -18,7 +18,7 @@ usage: ./ssh_disable_remote.sh
 
 usage: ./ssh_enable_hostname.sh [hostnames/ip-addresses]
 
-5) ssh_enable.sh - bash script, enables ssh on hosts from "host_list" file.
+5) ssh_enable.sh - bash script, enables ssh on hosts from "hosts" file.
 
 usage: ./ssh_enable.sh
 
