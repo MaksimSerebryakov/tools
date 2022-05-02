@@ -1,0 +1,11 @@
+{
+    "Events": [
+        {
+            "FileName": "test.txt",
+            "md5": "b088bb6fa7e06c153047a31eee97da07",
+            "EventType": "FileCopy",
+            "TargetPath": "/home/maxim/updater/to_update"
+        }
+    ],
+    "Backup": "/home/maxim/updater"
+}

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+cd /home/maxim/software_updater/build/
+mkdir update_package
+./build_update.py $1
+
+update_name=$(python3 -c "from datetime import datetime; print(str(datetime.now()).split('.')[0].split()[0])")
+
+tar -cvf $update_name update_package/
+
+./build_update.py rewrite_updates
+
+rm -rf update_package
+
+sudo cp $update_name /var/ftp/pub
+sudo cp updates.json /var/ftp/pub

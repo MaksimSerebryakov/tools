@@ -1,9 +1,15 @@
 #!/bin/bash 
 
-cp /home/maxim/update_192.168.100.213.tar.gz /home/maxim/tools/scripts/updater/
-cd /home/maxim/tools/scripts/updater
+hostname=$(hostname)
+file=$(python3 -c "import json; f = open('/home/maxim/updater/updates.json', 'r'); print(json.load(f)['updates']['$hostname']['update']); f.close()")
+
+#cp /home/maxim/update_192.168.100.213.tar.gz /home/maxim/updater/
+cd /home/maxim/updater
 mkdir update_package
-tar -xvf update_192.168.100.213.tar.gz
-cp update_192.168.100.213/* update_package
-rm -rf update_192.168.100.213
-rm update_192.168.100.213.tar.gz
+tar -xvf $file 
+#cp update_192.168.100.213/* update_package
+#rm -rf update_192.168.100.213
+rm $file
+rm updates.json
+
+sudo ./install/install_update.py

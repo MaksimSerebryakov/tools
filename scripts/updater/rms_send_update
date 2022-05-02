@@ -1,0 +1,2 @@
+snmpwalk -v2c -c get_update 192.168.100.213 NET-SNMP-EXTEND-MIB::nsExtendOutLine.\"get_update\".1
+snmpwalk -v2c -c get_update 192.168.100.213 NET-SNMP-EXTEND-MIB::nsExtendOutLine.\"install_update\".1

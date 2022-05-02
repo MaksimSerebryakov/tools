@@ -5,12 +5,14 @@ import hashlib
 import os.path
 import os
 import logging
+import sys 
 
 from datetime import datetime
 
 EVENTS_DICT = {
     "FileCopy": ("EventType", "md5", "TargetPath", "FileName"),
-    "ExecCommand" : ("EventType", "CommandText")
+    "ExecCommand" : ("EventType", "CommandText"),
+    "FileRemove": ("EventType", "TargetPath")
 } 
 BACKUP_FOLDER_NAME = '_'.join(str(datetime.now()).split('.')[0].split())
 
@@ -35,6 +37,11 @@ class MD5Error(Exception):
         self.type = "MD5Error"
         self.file = file_name
 
+class PathError(Exception):
+    def __init__(self, path):
+        self.type = 'PathError'
+        self.path = path
+
 
 def make_logger():
     logger = logging.getLogger('update_logger')
@@ -53,17 +60,29 @@ def make_logger():
 def move_files_back():
     events = {}
     
-    with open('../update_package/events.json', 'r') as events_file:
+    with open('update_package/events.json', 'r') as events_file:
         events = json.load(events_file)
+    
+    config_path = ''
+    for i in range(len(sys.argv[0].split('/')) - 1):
+        config_path += sys.argv[0].split('/')[i] + '/'
+    config_path += 'config_path.json'
+    
+    backup = ''
+    with open(config_path, 'r') as cfg_path:
+        backup = json.load(cfg_path)['backup']
+    
+    if not(os.path.exists(backup + '/backup/' + BACKUP_FOLDER_NAME)):
+        return
 
-    files = os.listdir(events["Backup"] + '/backup/' + BACKUP_FOLDER_NAME)
+    files = os.listdir(backup + '/backup/' + BACKUP_FOLDER_NAME)
     
     for event in events["Events"]:
         if event["EventType"] == "FileCopy":
             if event["md5"] in files:
                 os.system(
                     'cp {0}/backup/{1}/{2} {3}/{4}'.format(
-                        events["Backup"],
+                        backup,
                         BACKUP_FOLDER_NAME,
                         event["md5"],
                         event["TargetPath"],
@@ -76,7 +95,7 @@ def delete_update_package(files_moved=False):
     if files_moved:
         move_files_back()
 
-    os.system("sudo rm -rf ../update_package/")
+    os.system("sudo rm -rf update_package/")
     #os.system("sudo rm events.json")
     
 def check_syntax(events):
@@ -84,7 +103,7 @@ def check_syntax(events):
         if not(event["EventType"] in EVENTS_DICT.keys()):
             raise UnknownEvent(event["EventType"])
 
-        if event["EventType"] == list(EVENTS_DICT.keys())[0]:
+        if event["EventType"] == 'FileCopy':
             if len(event.keys()) != 4:
                 raise EventError(
                     'Wrong "Events" keys number in events.json for "FileCopy"\
@@ -94,24 +113,38 @@ def check_syntax(events):
                 )
             else:
                 for arg in event.keys():
-                    if not(arg in EVENTS_DICT[list(EVENTS_DICT.keys())[0]]):
+                    if not(arg in EVENTS_DICT['FileCopy']):
                         raise EventError(
                             'Wrong list of "Events" keys in events.json for\
 FileCopy'
                         )
-        if event["EventType"] == list(EVENTS_DICT.keys())[1]:
+        if event["EventType"] == 'ExecCommand':
             if len(event.keys()) != 2:
                 raise EventError(
                     'Wrong "Events" keys number in events.json: for ExecCommand\
-expected 2, got {}'.format(
+\nexpected 2, got {}'.format(
                         len(event.keys())
                     )
                 )
             else:
                 for arg in event.keys():
-                    if not(arg in EVENTS_DICT[list(EVENTS_DICT.keys())[1]]):
+                    if not(arg in EVENTS_DICT['ExecCommand']):
                         raise EventError(
                             'Wrong list of keys in events.json for ExecCommand'
+                        )
+        if event["EventType"] == 'FileRemove':
+            if len(event.keys()) != 2:
+                raise EventError(
+                    'Wrong "Events" keys number in events.json: for FileRemove\
+\nexpected 2, got {}'.format(
+                        len(event.keys())
+                    )
+                )
+            else:
+                for arg in event.keys():
+                    if not(arg in EVENTS_DICT['FileRemove']):
+                        raise EventError(
+                            'Wrong list of keys in events.json for FileRemove'
                         )
 
 def back_up(backup_path, md5, file_name, target_path, fl):
@@ -165,9 +198,9 @@ def check_md5(file_name, target_path, md5):
     with open('{0}/{1}'.format(
         target_path,
         file_name
-    ), 'r') as f:
+    ), 'rb') as f:
         data = f.read()
-        md5_new = hashlib.md5(data.encode()).hexdigest()
+        md5_new = hashlib.md5(data).hexdigest()
     
         if md5 != md5_new:
             raise MD5Error('{}/{}'.format(
@@ -176,11 +209,22 @@ def check_md5(file_name, target_path, md5):
             ))
 
 def exec_events(events):
+    config_path = ''
+    for i in range(len(sys.argv[0].split('/')) - 1):
+        config_path += sys.argv[0].split('/')[i] + '/'
+    config_path += 'config_path.json'
+    
+    backup = ''
+    with open(config_path, 'r') as cfg_path:
+        backup = json.load(cfg_path)['backup']
+        
     fl_backup = False
+    
     for event in events["Events"]:
-        if event["EventType"] == list(EVENTS_DICT.keys())[0]:
-            if not(os.path.exists('../update_package/{}'.format(
-                        event["FileName"])
+        type_ = event["EventType"]
+        if type_ == 'FileCopy':
+            if not(os.path.exists('update_package/{}'.format(
+                        event["md5"])
                     )
                 ):                                                                 # check whether file 
                 raise EventError(                                                  # is in update package 
@@ -194,16 +238,24 @@ def exec_events(events):
                     event["FileName"]
                 )):
                 back_up(
-                    events["Backup"], 
+                    backup, 
                     event["md5"], 
                     event["FileName"], 
                     event["TargetPath"], 
                     fl_backup
                 )
                 fl_backup = True
+            else:
+                if not(os.path.exists('{0}/'.format(
+                    event["TargetPath"]
+                ))):
+                    raise PathError('{0}/{1}'.format(
+                        event["TargetPath"], 
+                        event["FileName"]
+                    ))
 
-            os.system("cp ../update_package/{0} {1}/{2}".format(
-                    event["FileName"], 
+            os.system("cp update_package/{0} {1}/{2}".format(
+                    event["md5"], 
                     event["TargetPath"],
                     event["FileName"]
                 )
@@ -214,17 +266,44 @@ def exec_events(events):
                 event["TargetPath"],
                 event["md5"]
             )
-        if event["EventType"] == list(EVENTS_DICT.keys())[1]:
+        if type_ == 'FileRemove':
+            if not(os.path.exists(event["TargetPath"])):
+                raise PathError(event["TargetPath"])
+            
+            md5 = ''
+            with open(event["TargetPath"], 'rb') as f:
+                data = f.read()
+                md5 = hashlib.md5(data).hexdigest()
+            
+            back_up(
+                backup,
+                md5,
+                event["TargetPath"].split('/')[-1],
+                '/'.join(event["TargetPath"].split('/')[:-1]),
+                fl_backup
+            )
+
+            os.system('sudo rm {}'.format(
+                event["TargetPath"]
+            ))
+
+        if type_ == 'ExecCommand':
             if not(os.system(event["CommandText"])):
                 continue
 
 def add_err_to_config(error_type):
     config = {}
-    with open('config_path', 'r') as cfg_path:
-        path = cfg_path.read().rstrip()
+    
+    config_path = ''
+    for i in range(len(sys.argv[0].split('/')) - 1):
+        config_path += sys.argv[0].split('/')[i] + '/'
+    config_path += 'config_path.json'
+    
+    with open(config_path, 'r') as cfg_path:
+        path = json.load(cfg_path)['config']
         with open(path, 'r') as config_file:
             config = json.load(config_file)
-
+    
     if not("Errors" in config.keys()):
         config["Errors"] = {}
 
@@ -235,48 +314,61 @@ def add_err_to_config(error_type):
         }
     }
 
-    with open('config_path', 'r') as cfg_path:
-        path = cfg_path.read().rstrip()
+    with open(config_path, 'r') as cfg_path:
+        path = json.load(cfg_path)['config']
         with open(path, 'w') as config_file:
             json.dump(config, config_file, indent=4)
 
 def add_new_files_to_config():
     config = {}
-    with open('config_path', 'r') as cfg_path:
-        path = cfg_path.read().rstrip()
+    
+    config_path = ''
+    for i in range(len(sys.argv[0].split('/')) - 1):
+        config_path += sys.argv[0].split('/')[i] + '/'
+    config_path += 'config_path.json'
+    
+    with open(config_path, 'r') as cfg_path:
+        path = json.load(cfg_path)['config']
         with open(path, 'r') as config_file:
             config = json.load(config_file)
-    config["New"] = list()
+    config["New"] = {}
+    config["Remove"] = {}
 
     events = {}
-    with open('../update_package/events.json', 'r') as events_file:
+    with open('update_package/events.json', 'r') as events_file:
         events = json.load(events_file)
 
+    cntr_new = 0
+    cntr_remove = 0
     for event in events["Events"]:
         if event["EventType"] == "FileCopy":
-            config["New"].append(
-                {
+            config["New"][str(cntr_new)] = {
                     "hash" : event["md5"],
                     "path" : event["TargetPath"] + '/' + event["FileName"]
                 }
-            )
+            cntr_new += 1
+        if event["EventType"] == "FileRemove":
+            config["Remove"][str(cntr_remove)] = {
+                    "path" : event["TargetPath"]
+                }
+            cntr_remove += 1
     
-    with open('config_path', 'r') as cfg_path:
-        path = cfg_path.read().rstrip()
+    with open(config_path, 'r') as cfg_path:
+        path = json.load(cfg_path)['config']
         with open(path, 'w') as config_file:
             json.dump(config, config_file, indent=4)
 
 def main(): 
-    if not(os.path.exists('../update_package')):
+    if not(os.path.exists('update_package')):
         print("update_package/ is missing...")
         raise PackageError('update_package/')
-    if not(os.path.exists('../update_package/events.json')):
+    if not(os.path.exists('update_package/events.json')):
         print("events.json is missing...")
         raise PackageError('events.json')
     
     events = {}
     
-    with open('../update_package/events.json', 'r') as events_file:
+    with open('update_package/events.json', 'r') as events_file:
         events = json.load(events_file)
     
     check_syntax(events)
@@ -303,7 +395,7 @@ if __name__ == "__main__":
 
         add_err_to_config(ee)
 
-        print(ee)
+        print('eeeeeeeeee', ee)
 
         delete_update_package()
     except MD5Error as md5er:
@@ -316,7 +408,7 @@ if __name__ == "__main__":
 
         add_err_to_config(md5er)
 
-        print(md5er.file)
+        print('md5', md5er.file)
 
         delete_update_package(files_moved=True)
     except PackageError as pe:
@@ -328,6 +420,22 @@ if __name__ == "__main__":
         )
 
         add_err_to_config(pe)
+    except PathError as pathe:
+        logger = make_logger()
+        logger.error(
+            '{} no such file or directory'.format(
+                pathe.path
+            )
+        )
+            
+        print(
+            '{} no such file or directory'.format(
+                pathe.path
+            )
+        )
+        
+        add_err_to_config(pathe)
+        delete_update_package(files_moved=True)
     else:
         logger = make_logger()
         logger.info('Updated successfully')

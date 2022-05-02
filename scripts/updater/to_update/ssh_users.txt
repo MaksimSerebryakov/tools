@@ -1,0 +1,3 @@
+root      1305  0.0  0.1  77616  6696 ?        Ss   11:55   0:00 /usr/sbin/sshd -D
+maxim     1807  0.0  0.0  11184  2984 pts/0    S+   12:41   0:00 sh -c cd && ps aux | grep sshd > ssh_users.txt
+maxim     1809  0.0  0.0  12780   928 pts/0    S+   12:41   0:00 grep sshd
